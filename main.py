@@ -3,6 +3,9 @@ from dotenv import load_dotenv
 from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from PyPDF2 import PdfReader
+from langchain.embeddings import HuggingFaceEmbeddings
+import pinecone
+from langchain.vectorstores import Pinecone
 
 def get_text_and_split(pdfs):
     raw_text = ""
@@ -20,6 +23,17 @@ def get_text_and_split(pdfs):
 
     chunks = text_splitter.split_text(raw_text)
     return chunks
+
+def vector_store(chunks):
+    embeddings = HuggingFaceEmbeddings(model_name = 'BAAI/bge-large-en')
+    pinecone.init(
+        api_key='b7540fd4-1c50-4982-ba4e-d38204d59337',
+        environment='gcp-starter'
+    )
+    pinecone.Index('chatbotmultiplepdfs')
+
+    vectorstore = Pinecone.from_texts(chunks, embeddings, index_name='chatbotmultiplepdfs')
+    return vectorstore
     
 def main():
     load_dotenv()
@@ -34,9 +48,13 @@ def main():
         with col2:
             if sl.button("Process PDF's"):
                 with sl.spinner("Processing PDF's..."): 
-                    chunks = get_text_and_split(pdfs)
                     # Getting the text and splitting into chunks from pdfs
-                    sl.write(chunks)
+                    chunks = get_text_and_split(pdfs)
+                    vectorestore = vector_store(chunks)
+                    test = vectorestore.similarity_search("The existence of the shogunate rested on which two obligiations")
+                    sl.write(test)
+                    
+
 
 
 
